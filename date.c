@@ -36,194 +36,194 @@
 */
 
 #ifndef TM_YEAR_BASE
-#define TM_YEAR_BASE	1900
+#define TM_YEAR_BASE    1900
 #endif /* !defined TM_YEAR_BASE */
 
 #ifndef SECSPERMIN
-#define SECSPERMIN	60
+#define SECSPERMIN  60
 #endif /* !defined SECSPERMIN */
 
 #if !HAVE_POSIX_DECLS
-extern char *		optarg;
-extern int		optind;
+extern char *       optarg;
+extern int      optind;
 #endif
 
-static int		retval = EXIT_SUCCESS;
+static int      retval = EXIT_SUCCESS;
 
-static void		display(const char *, time_t);
-static void		dogmt(void);
-static void		errensure(void);
-static void		timeout(FILE *, const char *, const struct tm *);
-static _Noreturn void	usage(void);
+static void     display(const char *, time_t);
+static void     dogmt(void);
+static void     errensure(void);
+static void     timeout(FILE *, const char *, const struct tm *);
+static _Noreturn void   usage(void);
 
 int
 main(const int argc, char *argv[])
 {
-	register const char *	format = "+%+";
-	register int		ch;
-	register bool		rflag = false;
-	time_t			t;
-	intmax_t		secs;
-	char *			endarg;
+    register const char *   format = "+%+";
+    register int        ch;
+    register bool       rflag = false;
+    time_t          t;
+    intmax_t        secs;
+    char *          endarg;
 
 #ifdef LC_ALL
-	setlocale(LC_ALL, "");
+    setlocale(LC_ALL, "");
 #endif /* defined(LC_ALL) */
 #if HAVE_GETTEXT
 #ifdef TZ_DOMAINDIR
-	bindtextdomain(TZ_DOMAIN, TZ_DOMAINDIR);
+    bindtextdomain(TZ_DOMAIN, TZ_DOMAINDIR);
 #endif /* defined(TEXTDOMAINDIR) */
-	textdomain(TZ_DOMAIN);
+    textdomain(TZ_DOMAIN);
 #endif /* HAVE_GETTEXT */
-	t = time(NULL);
-	while ((ch = getopt(argc, argv, "ucr:")) != EOF && ch != -1) {
-		switch (ch) {
-		default:
-			usage();
-		case 'u':		/* do it in UT */
-		case 'c':
-			dogmt();
-			break;
-		case 'r':		/* seconds since 1970 */
-			if (rflag) {
-				fprintf(stderr,
-					_("date: error: multiple -r's used"));
-				usage();
-			}
-			rflag = true;
-			errno = 0;
-			secs = strtoimax(optarg, &endarg, 0);
-			if (*endarg || optarg == endarg)
-				errno = EINVAL;
-			else if (! (TIME_T_MIN <= secs && secs <= TIME_T_MAX))
-				errno = ERANGE;
-			if (errno) {
-				perror(optarg);
-				errensure();
-				exit(retval);
-			}
-			t = secs;
-			break;
-		}
-	}
-	if (optind < argc) {
-	  if (argc - optind != 1) {
-	    fprintf(stderr,
-		    _("date: error: multiple operands in command line\n"));
-	    usage();
-	  }
-	  format = argv[optind];
-	  if (*format != '+') {
-	    fprintf(stderr, _("date: unknown operand: %s\n"), format);
-	    usage();
-	  }
-	}
+    t = time(NULL);
+    while ((ch = getopt(argc, argv, "ucr:")) != EOF && ch != -1) {
+        switch (ch) {
+        default:
+            usage();
+        case 'u':       /* do it in UT */
+        case 'c':
+            dogmt();
+            break;
+        case 'r':       /* seconds since 1970 */
+            if (rflag) {
+                fprintf(stderr,
+                    _("date: error: multiple -r's used"));
+                usage();
+            }
+            rflag = true;
+            errno = 0;
+            secs = strtoimax(optarg, &endarg, 0);
+            if (*endarg || optarg == endarg)
+                errno = EINVAL;
+            else if (! (TIME_T_MIN <= secs && secs <= TIME_T_MAX))
+                errno = ERANGE;
+            if (errno) {
+                perror(optarg);
+                errensure();
+                exit(retval);
+            }
+            t = secs;
+            break;
+        }
+    }
+    if (optind < argc) {
+      if (argc - optind != 1) {
+        fprintf(stderr,
+            _("date: error: multiple operands in command line\n"));
+        usage();
+      }
+      format = argv[optind];
+      if (*format != '+') {
+        fprintf(stderr, _("date: unknown operand: %s\n"), format);
+        usage();
+      }
+    }
 
-	display(format, t);
-	return retval;
+    display(format, t);
+    return retval;
 }
 
 static void
 dogmt(void)
 {
-	static char **	fakeenv;
+    static char **  fakeenv;
 
-	if (fakeenv == NULL) {
-		register int	from;
-		register int	to;
-		register int	n;
-		static char	tzegmt0[] = "TZ=GMT0";
+    if (fakeenv == NULL) {
+        register int    from;
+        register int    to;
+        register int    n;
+        static char tzegmt0[] = "TZ=GMT0";
 
-		for (n = 0;  environ[n] != NULL;  ++n)
-			continue;
-		fakeenv = malloc((n + 2) * sizeof *fakeenv);
-		if (fakeenv == NULL) {
-			perror(_("Memory exhausted"));
-			errensure();
-			exit(retval);
-		}
-		to = 0;
-		fakeenv[to++] = tzegmt0;
-		for (from = 1; environ[from] != NULL; ++from)
-			if (strncmp(environ[from], "TZ=", 3) != 0)
-				fakeenv[to++] = environ[from];
-		fakeenv[to] = NULL;
-		environ = fakeenv;
-	}
+        for (n = 0;  environ[n] != NULL;  ++n)
+            continue;
+        fakeenv = malloc((n + 2) * sizeof *fakeenv);
+        if (fakeenv == NULL) {
+            perror(_("Memory exhausted"));
+            errensure();
+            exit(retval);
+        }
+        to = 0;
+        fakeenv[to++] = tzegmt0;
+        for (from = 1; environ[from] != NULL; ++from)
+            if (strncmp(environ[from], "TZ=", 3) != 0)
+                fakeenv[to++] = environ[from];
+        fakeenv[to] = NULL;
+        environ = fakeenv;
+    }
 }
 
 static void
 errensure(void)
 {
-	if (retval == EXIT_SUCCESS)
-		retval = EXIT_FAILURE;
+    if (retval == EXIT_SUCCESS)
+        retval = EXIT_FAILURE;
 }
 
 static void
 usage(void)
 {
-	fprintf(stderr,
-		       _("date: usage: date [-u] [-c] [-r seconds]"
-			 " [+format]\n"));
-	errensure();
-	exit(retval);
+    fprintf(stderr,
+               _("date: usage: date [-u] [-c] [-r seconds]"
+             " [+format]\n"));
+    errensure();
+    exit(retval);
 }
 
 static void
 display(char const *format, time_t now)
 {
-	struct tm *tmp;
+    struct tm *tmp;
 
-	tmp = localtime(&now);
-	if (!tmp) {
-		fprintf(stderr,
-			_("date: error: time out of range\n"));
-		errensure();
-		return;
-	}
-	timeout(stdout, format, tmp);
-	putchar('\n');
-	fflush(stdout);
-	fflush(stderr);
-	if (ferror(stdout) || ferror(stderr)) {
-		fprintf(stderr,
-			_("date: error: couldn't write results\n"));
-		errensure();
-	}
+    tmp = localtime(&now);
+    if (!tmp) {
+        fprintf(stderr,
+            _("date: error: time out of range\n"));
+        errensure();
+        return;
+    }
+    timeout(stdout, format, tmp);
+    putchar('\n');
+    fflush(stdout);
+    fflush(stderr);
+    if (ferror(stdout) || ferror(stderr)) {
+        fprintf(stderr,
+            _("date: error: couldn't write results\n"));
+        errensure();
+    }
 }
 
-#define INCR	1024
+#define INCR    1024
 
 static void
 timeout(FILE *fp, char const *format, struct tm const *tmp)
 {
-	char *	cp;
-	size_t	result;
-	size_t	size;
-	struct tm tm;
+    char *  cp;
+    size_t  result;
+    size_t  size;
+    struct tm tm;
 
-	if (!tmp) {
-		fprintf(stderr, _("date: error: time out of range\n"));
-		errensure();
-		return;
-	}
-	tm = *tmp;
-	tmp = &tm;
-	size = INCR;
-	cp = malloc(size);
-	for ( ; ; ) {
-		if (cp == NULL) {
-			fprintf(stderr,
-				_("date: error: can't get memory\n"));
-			errensure();
-			exit(retval);
-		}
-		result = strftime(cp, size, format, tmp);
-		if (result != 0)
-			break;
-		size += INCR;
-		cp = realloc(cp, size);
-	}
-	fwrite(cp + 1, 1, result - 1, fp);
-	free(cp);
+    if (!tmp) {
+        fprintf(stderr, _("date: error: time out of range\n"));
+        errensure();
+        return;
+    }
+    tm = *tmp;
+    tmp = &tm;
+    size = INCR;
+    cp = malloc(size);
+    for ( ; ; ) {
+        if (cp == NULL) {
+            fprintf(stderr,
+                _("date: error: can't get memory\n"));
+            errensure();
+            exit(retval);
+        }
+        result = strftime(cp, size, format, tmp);
+        if (result != 0)
+            break;
+        size += INCR;
+        cp = realloc(cp, size);
+    }
+    fwrite(cp + 1, 1, result - 1, fp);
+    free(cp);
 }
